@@ -186,7 +186,7 @@ class AnthropicBatchRequestProcessor(BaseBatchRequestProcessor):
             "custom_id": str(generic_request.original_row_idx),
             "params": {
                 "model": generic_request.model,
-                "max_tokens": litellm.get_max_tokens(self.config.model),
+                "max_tokens": litellm.get_max_tokens(self.config.model_name),
                 **kwargs,  # contains 'system' and 'messages'
                 **generic_request.generation_params,  # contains 'temperature', 'top_p', etc.
             },
@@ -243,7 +243,7 @@ class AnthropicBatchRequestProcessor(BaseBatchRequestProcessor):
             )
 
             cost = litellm.completion_cost(
-                model=self.config.model,
+                model=self.config.model_name,
                 prompt=str(generic_request.messages),
                 completion=response_message_raw,
             )

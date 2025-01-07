@@ -64,7 +64,7 @@ class OpenAIOnlineRequestProcessor(BaseOnlineRequestProcessor, OpenAIRequestMixi
         response = requests.post(
             self.url,
             headers={"Authorization": f"Bearer {self.api_key}"},
-            json={"model": self.config.model, "messages": []},
+            json={"model": self.config.model_name, "messages": []},
         )
         rpm = int(response.headers.get("x-ratelimit-limit-requests", 0))
         tpm = int(response.headers.get("x-ratelimit-limit-tokens", 0))
@@ -82,7 +82,7 @@ class OpenAIOnlineRequestProcessor(BaseOnlineRequestProcessor, OpenAIRequestMixi
             Override this method for more accurate model-specific estimates.
         """
         try:
-            return litellm.get_max_tokens(model=self.config.model) // 4
+            return litellm.get_max_tokens(model=self.config.model_name) // 4
         except Exception:
             return 0
 
@@ -131,7 +131,7 @@ class OpenAIOnlineRequestProcessor(BaseOnlineRequestProcessor, OpenAIRequestMixi
             - gpt-4o-mini with date >= 2024-07-18 or latest
             - gpt-4o with date >= 2024-08-06 or latest
         """
-        model_name = self.config.model.lower()
+        model_name = self.config.model_name.lower()
 
         # Check gpt-4o-mini support
         if model_name == "gpt-4o-mini":  # Latest version
@@ -231,9 +231,9 @@ class OpenAIOnlineRequestProcessor(BaseOnlineRequestProcessor, OpenAIRequestMixi
 
     def get_token_encoding(self) -> str:
         """Get the token encoding name for a given model."""
-        if self.config.model.startswith("gpt-4"):
+        if self.config.model_name.startswith("gpt-4"):
             name = "cl100k_base"
-        elif self.config.model.startswith("gpt-3.5"):
+        elif self.config.model_name.startswith("gpt-3.5"):
             name = "cl100k_base"
         else:
             name = "cl100k_base"  # Default to cl100k_base

@@ -75,14 +75,14 @@ class BaseRequestProcessor(ABC):
             return output_dataset
 
         logger.info(
-            f"Running {self.__class__.__name__} completions with model: {self.config.model}"
+            f"Running {self.__class__.__name__} completions with model: {self.config.model_name}"
         )
 
         self.prompt_formatter = prompt_formatter
         if self.prompt_formatter.response_format:
             if not self.check_structured_output_support():
                 raise ValueError(
-                    f"Model {self.config.model} does not support structured output, "
+                    f"Model {self.config.model_name} does not support structured output, "
                     f"response_format: {self.prompt_formatter.response_format}"
                 )
         generic_request_files = self.create_request_files(dataset)

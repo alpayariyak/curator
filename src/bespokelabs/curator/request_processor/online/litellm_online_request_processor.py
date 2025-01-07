@@ -67,7 +67,7 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
         try:
             response = run_in_event_loop(
                 self.client.chat.completions.create(
-                    model=self.config.model,
+                    model=self.config.model_name,
                     messages=[{"role": "user", "content": "Jason is 25 years old."}],
                     response_model=User,
                 )
@@ -75,16 +75,18 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
             logger.info(f"Check instructor structure output response: {response}")
             assert isinstance(response, User)
             logger.info(
-                f"Model {self.config.model} supports structured output via instructor, response: {response}"
+                f"Model {self.config.model_name} supports structured output via instructor, response: {response}"
             )
             return True
         except instructor.exceptions.InstructorRetryException as e:
             if "litellm.AuthenticationError" in str(e):
-                logger.warning(f"Please provide a valid API key for model {self.config.model}.")
+                logger.warning(
+                    f"Please provide a valid API key for model {self.config.model_name}."
+                )
                 raise e
             else:
                 logger.warning(
-                    f"Model {self.config.model} does not support structured output via instructor: {e} {type(e)} {e.__cause__}"
+                    f"Model {self.config.model_name} does not support structured output via instructor: {e} {type(e)} {e.__cause__}"
                 )
                 return False
 
@@ -101,7 +103,7 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
             Falls back to 0 if token estimation fails
         """
         try:
-            return litellm.get_max_tokens(model=self.config.model) // 4
+            return litellm.get_max_tokens(model=self.config.model_name) // 4
         except Exception:
             return 0
 
@@ -117,13 +119,13 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
         Returns:
             int: Total estimated tokens (input + output)
         """
-        input_tokens = litellm.token_counter(model=self.config.model, messages=messages)
+        input_tokens = litellm.token_counter(model=self.config.model_name, messages=messages)
         output_tokens = self.estimate_output_tokens()
         return input_tokens + output_tokens
 
     def test_call(self):
         completion = litellm.completion(
-            model=self.config.model,
+            model=self.config.model_name,
             messages=[
                 {"role": "user", "content": "hi"}
             ],  # Some models (e.g. Claude) require an non-empty message to get rate limits.
@@ -133,7 +135,9 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
             litellm.completion_cost(completion_response=completion.model_dump())
         except Exception as e:
             # We should ideally not catch a catch-all exception here. But litellm is not throwing any specific error.
-            logger.warning(f"LiteLLM does not support cost estimation for model {self.model}: {e}")
+            logger.warning(
+                f"LiteLLM does not support cost estimation for model {self.config.model_name}: {e}"
+            )
 
         headers = completion._hidden_params.get("additional_headers", {})
         logger.info(f"Test call headers: {headers}")
@@ -149,7 +153,7 @@ class LiteLLMOnlineRequestProcessor(BaseOnlineRequestProcessor):
             - Makes a test request to get rate limit information from response headers.
             - Some providers (e.g., Claude) require non-empty messages
         """
-        logger.info(f"Getting rate limits for model: {self.config.model}")
+        logger.info(f"Getting rate limits for model: {self.config.model_name}")
 
         headers = self.test_call()
         rpm = int(headers.get("x-ratelimit-limit-requests", 0))

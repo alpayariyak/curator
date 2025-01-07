@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class RequestProcessorConfig(BaseModel):
     """Configuration for request processors."""
 
-    model: str
+    model_name: str
     base_url: str | None = None
     max_retries: int = Field(default=10, ge=0)
     request_timeout: int = Field(default=10 * 60, gt=0)
@@ -16,14 +16,14 @@ class RequestProcessorConfig(BaseModel):
     generation_params: dict = Field(default_factory=dict)
 
     def __post_init__(self):
-        self.supported_params = litellm.get_supported_openai_params(model=self.model)
+        self.supported_params = litellm.get_supported_openai_params(model=self.model_name)
         logger.debug(
-            f"Automatically detected supported params using litellm for {self.model}: {self.supported_params}"
+            f"Automatically detected supported params using litellm for {self.model_name}: {self.supported_params}"
         )
 
         for key in self.generation_params.keys():
             raise ValueError(
-                f"Generation parameter '{key}' is not supported for model '{self.model}'"
+                f"Generation parameter '{key}' is not supported for model '{self.model_name}'"
             )
 
 

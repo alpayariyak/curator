@@ -93,7 +93,7 @@ class LLM:
 
         if batch:
             config_params = {
-                "model": model_name,
+                "model_name": model_name,
                 "base_url": base_url,
                 "batch_size": batch_size,
                 "batch_check_interval": batch_check_interval,
@@ -106,7 +106,7 @@ class LLM:
             config = BatchRequestProcessorConfig(**_remove_none_values(config_params))
         else:
             config_params = {
-                "model": model_name,
+                "model_name": model_name,
                 "base_url": base_url,
                 "max_requests_per_minute": max_requests_per_minute,
                 "max_tokens_per_minute": max_tokens_per_minute,
