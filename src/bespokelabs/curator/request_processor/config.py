@@ -82,7 +82,7 @@ class OnlineRequestProcessorConfig(RequestProcessorConfig):
     max_requests_per_minute: int | None = Field(default=None, gt=0)
     max_tokens_per_minute: int | None = Field(default=None, gt=0)
     seconds_to_pause_on_rate_limit: int = Field(default=10, gt=0)
-
+    max_parallel_requests: int | None = Field(default=None, gt=0)
 
 class OfflineRequestProcessorConfig(RequestProcessorConfig):
     """Additional configuration specific to offline processors.
@@ -130,6 +130,7 @@ class OnlineBackendParams(BaseBackendParams, total=False):
 
     max_requests_per_minute: t.Optional[int]
     max_tokens_per_minute: t.Optional[int]
+    max_parallel_requests: t.Optional[int]
     seconds_to_pause_on_rate_limit: t.Optional[int]
 
 

@@ -66,6 +66,7 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
         super().__init__(config)
         self.manual_max_requests_per_minute = config.max_requests_per_minute
         self.manual_max_tokens_per_minute = config.max_tokens_per_minute
+        self.max_parallel_requests = config.max_parallel_requests
         self.default_max_requests_per_minute = 10
         self.default_max_tokens_per_minute = 100_000
         self.header_based_max_requests_per_minute = None
@@ -227,8 +228,8 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
         status_tracker.model = self.prompt_formatter.model_name
         status_tracker.start_tracker(self._tracker_console)
 
-        # Use higher connector limit for better throughput
-        connector = aiohttp.TCPConnector(limit=10 * status_tracker.max_requests_per_minute)
+        # Use parallel request limit for connector
+        connector = aiohttp.TCPConnector(limit=self.max_parallel_requests)
         async with aiohttp.ClientSession(connector=connector) as session:
             async with aiofiles.open(generic_request_filepath) as file:
                 pending_requests = []
@@ -250,7 +251,10 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
                     token_estimate = self.estimate_total_tokens(request.generic_request.messages)
 
                     # Wait for capacity if needed
-                    while not status_tracker.has_capacity(token_estimate):
+                    while (
+                        not status_tracker.has_capacity(token_estimate) or 
+                        status_tracker.num_tasks_in_progress >= self.max_parallel_requests
+                    ):
                         await asyncio.sleep(0.1)
 
                     # Wait for rate limits cool down if needed
@@ -281,7 +285,8 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
             pending_retries = set()
             while not queue_of_requests_to_retry.empty() or pending_retries:
                 # Process new items from the queue if we have capacity
-                if not queue_of_requests_to_retry.empty():
+                if (not queue_of_requests_to_retry.empty() and 
+                    status_tracker.num_tasks_in_progress < self.max_parallel_requests):
                     retry_request = await queue_of_requests_to_retry.get()
                     token_estimate = self.estimate_total_tokens(retry_request.generic_request.messages)
                     attempt_number = self.config.max_retries - retry_request.attempts_left
@@ -292,7 +297,10 @@ class BaseOnlineRequestProcessor(BaseRequestProcessor, ABC):
                     )
 
                     # Wait for capacity if needed
-                    while not status_tracker.has_capacity(token_estimate):
+                    while (
+                        not status_tracker.has_capacity(token_estimate) or 
+                        status_tracker.num_tasks_in_progress >= self.max_parallel_requests
+                    ):
                         await asyncio.sleep(0.1)
 
                     # Consume capacity before making request

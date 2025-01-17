@@ -93,6 +93,7 @@ class LLM:
                 - Online:
                     - max_requests_per_minute: Maximum number of requests per minute for rate limiting
                     - max_tokens_per_minute: Maximum number of tokens per minute for rate limiting
+                    - max_parallel_requests: Maximum number of parallel requests for rate limiting
                     - seconds_to_pause_on_rate_limit: Number of seconds to pause when rate limited
 
                 - Batch:
